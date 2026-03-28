@@ -1,0 +1,17 @@
+flask
+langchain
+langchain-community
+langchain-ollama
+langchain-text-splitters
+langchain-huggingface
+faiss-cpu
+sentence-transformers
+pypdf
+deepface
+opencv-python
+tf-keras
+pillow
+pandas
+librosa
+soundfile
+SpeechRecognition

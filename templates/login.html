@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - SereneMind AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        .auth-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .auth-header { text-align: center; margin-bottom: 30px; }
+        .auth-header h1 { font-size: 2rem; background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }
+        .auth-header p { color: #94a3b8; font-size: 0.95rem; }
+
+        .form-group { margin-bottom: 20px; position: relative; }
+        .form-group i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #6366f1; transition: 0.3s; }
+        .form-group input { 
+            width: 100%; 
+            background: rgba(15, 23, 42, 0.6); 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            border-radius: 12px; 
+            padding: 14px 14px 14px 45px; 
+            color: #fff; 
+            font-size: 1rem; 
+            transition: 0.3s; 
+            outline: none;
+        }
+        .form-group input:focus { border-color: var(--accent-color); background: rgba(15, 23, 42, 0.8); box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1); }
+        .form-group input:focus + i { color: var(--accent-color); }
+
+        .auth-btn { 
+            width: 100%; 
+            background: var(--user-msg-bg); 
+            color: white; 
+            border: none; 
+            border-radius: 12px; 
+            padding: 14px; 
+            font-size: 1rem; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: 0.3s; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .auth-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(139, 92, 246, 0.4); filter: brightness(1.1); }
+
+        .auth-footer { text-align: center; margin-top: 25px; color: #94a3b8; font-size: 0.9rem; }
+        .auth-footer a { color: var(--accent-color); text-decoration: none; font-weight: 600; margin-left: 5px; }
+        .auth-footer a:hover { text-decoration: underline; }
+
+        .flash-msg { 
+            padding: 12px; 
+            border-radius: 10px; 
+            margin-bottom: 20px; 
+            font-size: 0.9rem; 
+            text-align: center;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+        .flash-msg.success { background: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.2); color: #86efac; }
+    </style>
+</head>
+<body>
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1>Welcome to mental health chatbot ai.</h1>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="flash-msg {{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('login') }}" method="POST">
+            <div class="form-group">
+                <input type="text" name="username" placeholder="Username or Email" required>
+                <i class="fa-solid fa-user"></i>
+            </div>
+            <div class="form-group">
+                <input type="password" name="password" placeholder="Password" required>
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <button type="submit" class="auth-btn">
+                <span>Sign In</span>
+                <i class="fa-solid fa-arrow-right-to-bracket"></i>
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            Don't have an account?<a href="{{ url_for('register') }}">Create one</a>
+        </div>
+    </div>
+</body>
+</html>

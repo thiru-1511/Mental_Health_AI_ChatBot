@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mental Health Prediction and Generative AI Model</title>
+    <meta name="description" content="Mental Health Prediction and Generative AI Model - Your empathetic multimodal AI companion.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="app-container">
+
+        <!-- ── Header ──────────────────────────────────────────────────────── -->
+        <header class="chat-header">
+            <div class="logo-area">
+                <i class="fa-solid fa-leaf logo-icon"></i>
+                <h1>Welcome to mental health chatbot ai.</h1>
+                <div id="avatar-container" class="avatar-container">
+                    <svg id="serene-avatar" viewBox="0 0 100 100" width="60" height="60">
+                        <circle cx="50" cy="50" r="45" fill="var(--accent-color)" opacity="0.2" stroke="var(--accent-color)" stroke-width="2"/>
+                        <!-- Eyes -->
+                        <g id="avatar-eyes">
+                            <circle class="eye left" cx="35" cy="45" r="4" fill="white" />
+                            <circle class="eye right" cx="65" cy="45" r="4" fill="white" />
+                        </g>
+                        <!-- Mouth -->
+                        <path id="avatar-mouth" d="M 35 65 Q 50 75 65 65" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" />
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Header action buttons -->
+            <div class="header-actions">
+                <div class="user-info" style="text-align:right; margin-right:15px; display:flex; flex-direction:column; justify-content:center;">
+                    <div style="font-size:0.85rem; font-weight:600; color:#fff; line-height:1;">{{ user.username if user else 'Guest' }}</div>
+                    <div style="font-size:0.7rem; color:#94a3b8; line-height:1; margin-top:4px;">
+                        {{ user.occupation if user and user.occupation else 'User' }}
+                    </div>
+                </div>
+                <button id="lang-toggle" class="header-action-btn" title="Switch Language" style="background:rgba(255,255,255,0.1); width:auto; padding:0 12px; border-radius:15px; font-size:0.75rem;">
+                    <i class="fa-solid fa-globe"></i> EN/தமிழ்
+                </button>
+                <button id="timer-btn" class="header-action-btn" title="Mindfulness Timer">
+                    <i class="fa-solid fa-clock"></i>
+                </button>
+                <button id="mic-btn" class="mic-btn" title="Record Voice">
+                    <i class="fa-solid fa-microphone"></i>
+                </button>
+                <button id="camera-btn" class="camera-btn" title="Detect Mood">
+                    <i class="fa-solid fa-camera"></i>
+                </button>
+                <a href="{{ url_for('logout') }}" title="Logout" style="color:#94a3b8; font-size:1.1rem; transition:0.3s; margin-left:15px; display:flex; align-items:center;">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                </a>
+            </div>
+        </header>
+
+        <nav class="tab-bar">
+            <button class="tab-btn active" data-tab="chat"><i class="fa-solid fa-comment-dots"></i> Chat</button>
+            <button class="tab-btn" data-tab="healthcare"><i class="fa-solid fa-user-doctor"></i> Specialists</button>
+            <button class="tab-btn" data-tab="consultations"><i class="fa-solid fa-video"></i> Sessions</button>
+            <button class="tab-btn" data-tab="history"><i class="fa-solid fa-file-medical"></i> History</button>
+            <button class="tab-btn" data-tab="maps"><i class="fa-solid fa-map-location-dot"></i> Nearby Help</button>
+            <button class="tab-btn" data-tab="profile"><i class="fa-solid fa-user"></i> Profile</button>
+        </nav>
+
+        <!-- ── Camera Modal ───────────────────────────────────────────────── -->
+        <div id="camera-modal" class="camera-modal">
+            <div class="camera-content glass-premium">
+                <div class="camera-header">
+                    <div class="header-status-area">
+                        <i class="fa-solid fa-camera-retro"></i>
+                        <h3>Mood Recognition</h3>
+                        <span id="detection-status" class="status-badge">Ready</span>
+                    </div>
+                    <button id="close-camera" class="close-btn"><i class="fa-solid fa-times"></i></button>
+                </div>
+
+                <div class="video-container">
+                    <video id="camera-feed" autoplay playsinline></video>
+                    <img id="captured-image" style="display: none; width: 100%; border-radius: 12px;">
+                    <div id="camera-flash" class="camera-flash"></div>
+                    <canvas id="snapshot-canvas" style="display: none;"></canvas>
+                </div>
+
+                <div class="camera-controls" id="camera-controls">
+                    <div class="camera-guide-text" id="camera-guide">Position your face in the center and ensure good lighting.</div>
+                    
+                    <button id="capture-btn" class="capture-btn-premium">
+                        <div class="btn-icon-circle"><i class="fa-solid fa-camera"></i></div>
+                        <span>Capture Face</span>
+                    </button>
+
+                    <div id="post-capture-controls" class="post-capture-grid" style="display: none;">
+                        <button id="retake-btn" class="retake-btn-premium">
+                            <i class="fa-solid fa-rotate-left"></i> Retake
+                        </button>
+                        <button id="analyze-btn" class="analyze-btn-premium">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Analyze Mood
+                        </button>
+                    </div>
+                </div>
+
+                <div id="mood-result" class="mood-result-panel" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- ── Mindfulness Timer Modal ────────────────────────────────────────── -->
+        <div id="timer-modal" class="camera-modal">
+            <div class="camera-content timer-card">
+                <div class="camera-header">
+                    <h3>🌬️ Mindfulness Timer</h3>
+                    <button id="close-timer" class="close-btn"><i class="fa-solid fa-times"></i></button>
+                </div>
+                <div class="timer-display">
+                    <div class="breathing-circle" id="breathing-circle"></div>
+                    <div class="breathing-text" id="breathing-text">Inhale...</div>
+                    <div class="timer-countdown" id="countdown-timer">02:00</div>
+                </div>
+                <button id="start-timer" class="capture-btn">Start Session</button>
+            </div>
+        </div>
+
+        <!-- ── Mood Badge ─────────────────────────────────────────────────── -->
+        <div id="mood-badge" class="mood-badge" style="display: none;">
+            <span id="mood-text"></span>
+            <button id="clear-mood" class="clear-mood-btn"><i class="fa-solid fa-times"></i></button>
+        </div>
+
+        <!-- ── Voice Overlay ──────────────────────────────────────────────── -->
+        <div id="voice-overlay" class="voice-overlay" style="display: none;">
+            <div class="voice-card">
+                <div class="pulse-ring"></div>
+                <i class="fa-solid fa-microphone mic-pulse"></i>
+                <p>Listening to your tone...</p>
+                <button id="stop-mic" class="stop-mic-btn">Stop &amp; Analyze</button>
+            </div>
+        </div>
+
+        <!-- ── Crisis Overlay ─────────────────────────────────────────────── -->
+        <div id="crisis-overlay" class="crisis-overlay" style="display: none;">
+            <div class="crisis-card">
+                <div class="crisis-icon">💙</div>
+                <h2>You Are Not Alone</h2>
+                <p id="crisis-message"></p>
+                <div id="crisis-resources" class="crisis-resources"></div>
+                <p id="crisis-reminder" class="crisis-reminder"></p>
+                <button id="close-crisis" class="close-crisis-btn">I'm Safe — Return to Chat</button>
+            </div>
+        </div>
+        
+
+        <!-- ── Music Player Modal ────────────────────────────────────────── -->
+        <div id="music-modal" class="camera-modal">
+            <div class="camera-content music-player-card">
+                <div class="camera-header">
+                    <div class="header-status-area">
+                        <i class="fa-solid fa-music"></i>
+                        <h3 id="now-playing-title">Now Playing</h3>
+                    </div>
+                    <button id="close-music" class="close-btn"><i class="fa-solid fa-times"></i></button>
+                </div>
+                <div class="music-player-footer" style="text-align: center; padding: 30px 20px;">
+                    <div id="headphones-icon" style="font-size: 4rem; margin-bottom: 16px; color: var(--accent-color);">
+                        <i class="fa-solid fa-headphones"></i>
+                    </div>
+                    <p id="song-detail-text" style="margin-bottom: 8px; font-size: 1.05rem; color: #e2e8f0; font-weight: 500;">Enjoy your personalized mood music.</p>
+                    <p style="font-size: 0.82rem; color: #64748b; margin-bottom: 22px;">Click a button below to listen now 🎵</p>
+                    <div style="display: flex; gap: 12px; width: 100%; margin-top: 5px;">
+                        <button id="back-to-results" class="vibrant-btn" style="background: rgba(255,255,255,0.05); flex: 1.2; border: 1px solid var(--glass-border); font-size: 0.9rem;">
+                            <i class="fa-solid fa-arrow-left"></i> Recommendations
+                        </button>
+                        <a id="link-youtube" href="#" target="_blank" class="vibrant-btn" style="background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%); flex: 1; text-align: center; text-decoration: none; font-size: 0.95rem;">
+                            <i class="fa-brands fa-youtube"></i> YouTube
+                        </a>
+                        <a id="link-spotify" href="#" target="_blank" class="vibrant-btn" style="background: linear-gradient(135deg, #1DB954 0%, #191414 100%); flex: 1; text-align: center; text-decoration: none; font-size: 0.95rem;">
+                            <i class="fa-brands fa-spotify"></i> Spotify
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════════════ -->
+        <!-- TAB: CHAT                                                         -->
+        <!-- ══════════════════════════════════════════════════════════════════ -->
+
+        <div id="tab-chat" class="tab-content active" style="display: flex;">
+            <div class="chat-window">
+                <div class="messages-container" id="messages-container">
+                    <div class="message bot-message">
+                        <div class="avatar"><i class="fa-solid fa-robot"></i></div>
+                        <div class="message-content">
+                            <p>Hello! I'm your Mental Health Prediction and Generative AI Model. 🌿<br>
+                            I can hear your <strong>voice</strong>, see your <strong>expression</strong>, and read your words to understand how you truly feel.<br><br>
+                            How are you feeling today?</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="typing-indicator" id="typing-indicator">
+                    <span></span><span></span><span></span>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <div style="display:flex; align-items:center; justify-content:space-between; padding: 0 0 8px 0;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <i class="fa-solid fa-globe" style="color:#8b5cf6; font-size:0.9rem;"></i>
+                        <select id="lang-select" style="background:rgba(30,41,59,0.9); color:#e2e8f0; border:1px solid rgba(255,255,255,0.1); border-radius:20px; padding:4px 12px; font-size:0.82rem; cursor:pointer; outline:none;">
+                            <option value="English">English</option>
+                            <option value="Tamil">தமிழ் (Tamil)</option>
+                            <option value="Telugu">తెలుగు (Telugu)</option>
+                            <option value="Kannada">ಕನ್ನಡ (Kannada)</option>
+                            <option value="Malayalam">മലയാളം (Malayalam)</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <button id="tts-toggle" class="tts-toggle-btn" title="Toggle Voice Output" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:20px; padding:4px 12px; color:#94a3b8; cursor:pointer; display:flex; align-items:center; gap:6px; font-size:0.82rem; transition:0.3s;">
+                            <i class="fa-solid fa-volume-xmark" id="tts-icon"></i> <span id="tts-text">Voice Off</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="input-wrapper">
+                    <button id="dictate-btn" class="dictate-btn" title="Dictate Message">
+                        <i class="fa-solid fa-microphone-lines"></i>
+                    </button>
+                    <input type="text" id="user-input" placeholder="Type your message here..." autocomplete="off">
+                    <button id="send-btn" class="send-btn">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════════════ -->
+        <!-- TAB: HEALTHCARE (Simplified)                                      -->
+        <!-- ══════════════════════════════════════════════════════════════════ -->
+        <div id="tab-healthcare" class="tab-content" style="display:none;">
+            <div class="dashboard-scroll">
+                <div class="dashboard-header">
+                    <h2>🏥 Available Specialists</h2>
+                    <p style="color:#94a3b8; font-size:0.9rem;">Book a session with our verified mental health professionals.</p>
+                </div>
+                
+                <div id="doctor-list-simple" class="doctor-simple-grid" style="display: grid; grid-template-columns: 1fr; gap: 15px; margin-top: 20px;">
+                    <!-- Specialists will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════════════ -->
+        <!-- TAB: CONSULTATIONS                                                -->
+        <!-- ══════════════════════════════════════════════════════════════════ -->
+        <div id="tab-consultations" class="tab-content" style="display:none;">
+            <div class="dashboard-scroll">
+                <div class="dashboard-header">
+                    <h2>🎥 My Consultations</h2>
+                    <p style="color:#94a3b8; font-size:0.9rem;">Join your active sessions or view past call logs.</p>
+                </div>
+                
+                <div id="consultation-list" class="doctor-simple-grid" style="display: grid; grid-template-columns: 1fr; gap: 15px; margin-top: 20px;">
+                    <!-- Consultations will be loaded here -->
+                    <div class="vibrant-card" style="padding:20px; text-align:center; color:#94a3b8;">
+                        <i class="fa-solid fa-calendar-day" style="font-size:2rem; margin-bottom:10px; display:block;"></i>
+                        No active sessions scheduled yet.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════════════ -->
+        <!-- TAB: HISTORY (New)                                                -->
+        <!-- ══════════════════════════════════════════════════════════════════ -->
+        <div id="tab-history" class="tab-content" style="display:none;">
+            <div class="dashboard-scroll">
+                <div class="dashboard-header">
+                    <h2>📄 Medical Reports & History</h2>
+                    <p style="color:#94a3b8; font-size:0.9rem;">View your previous consultations and prescriptions.</p>
+                </div>
+                
+                <div id="history-list" class="doctor-simple-grid" style="display: grid; grid-template-columns: 1fr; gap: 15px; margin-top: 20px;">
+                    <!-- History will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════════════ -->
+        <!-- TAB: MAPS (Nearby Help)                                          -->
+        <!-- ══════════════════════════════════════════════════════════════════ -->
+        <div id="tab-maps" class="tab-content" style="display:none;">
+            <div class="dashboard-scroll" style="padding:0; overflow:hidden;">
+                <div id="map-container" style="width:100%; height:100%; position:relative;">
+                    <div id="map" style="width:100%; height:100%;"></div>
+                    <div id="map-overlay" style="position:absolute; top:20px; left:20px; right:20px; z-index:5; display:flex; flex-direction:column; gap:10px; pointer-events:none;">
+                        <div class="glass-premium" style="padding:15px; border-radius:15px; pointer-events:auto; max-width:400px; box-shadow:0 10px 30px rgba(0,0,0,0.3);">
+                            <h3 style="margin:0; font-size:1.1rem; color:var(--accent-color);"><i class="fa-solid fa-hospital"></i> Nearby Medical Facilities</h3>
+                            <p style="margin:5px 0 0; font-size:0.8rem; color:#94a3b8;">Find hospitals and mental health clinics near you.</p>
+                            
+                            <div style="margin-top:15px; display:flex; gap:8px;">
+                                <input type="text" id="manual-location-input" placeholder="Enter location (e.g. Vallipattu)" style="flex:1; background:rgba(15,23,42,0.8); border:1px solid rgba(255,255,255,0.1); padding:10px 15px; border-radius:10px; color:#fff; font-size:0.8rem; outline:none;">
+                                <button id="search-location-btn" class="vibrant-btn" style="width:45px; height:40px; padding:0; border-radius:10px;"><i class="fa-solid fa-search"></i></button>
+                            </div>
+
+                            <div id="map-stats" style="margin-top:10px; font-size:0.75rem; color:#64748b; line-height:1.4;">
+                                <i class="fa-solid fa-spinner fa-spin"></i> Initializing map...
+                            </div>
+                            <div style="margin-top:15px; display:flex; flex-direction:column; gap:8px;">
+                                <div style="display:flex; gap:8px;">
+                                    <button id="find-hospitals-btn" class="vibrant-btn" style="flex:1; font-size:0.7rem; padding:8px 4px; border-radius:8px;">
+                                        <i class="fa-solid fa-hospital"></i> Hospitals
+                                    </button>
+                                    <button id="find-mental-btn" class="vibrant-btn" style="flex:1; font-size:0.7rem; padding:8px 4px; border-radius:8px; background:var(--accent-gradient);">
+                                        <i class="fa-solid fa-brain"></i> Mental
+                                    </button>
+                                </div>
+                                <div style="display:flex; gap:8px;">
+                                    <button id="find-all-btn" class="vibrant-btn" style="flex:1; font-size:0.7rem; padding:8px 4px; border-radius:8px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);">
+                                        Show All
+                                    </button>
+                                    <button id="locate-me-btn" class="vibrant-btn" style="flex:1; font-size:0.7rem; padding:8px 4px; border-radius:8px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);">
+                                        <i class="fa-solid fa-crosshairs"></i> Refresh Location
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="facility-info-card" class="glass-premium" style="position:absolute; bottom:30px; left:20px; right:20px; z-index:5; padding:20px; border-radius:20px; display:none; pointer-events:auto; max-width:450px; animation:slideUp 0.3s ease-out;">
+                        <!-- Selected facility details show here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Booking & WhatsApp Modal ────────────────────────────────────── -->
+        <div id="booking-modal-simple" class="camera-modal">
+            <div class="camera-content glass-premium" style="max-width: 450px;">
+                <div class="camera-header">
+                    <h3>📅 Book Your Session</h3>
+                    <button id="close-booking-simple" class="close-btn"><i class="fa-solid fa-times"></i></button>
+                </div>
+                
+                <div id="booking-step-1" class="booking-step">
+                    <p id="booking-dr-name" style="font-weight: 600; margin-bottom: 20px; color: var(--accent-color);"></p>
+                    
+                    <div class="input-group">
+                        <label>Select Date</label>
+                        <input type="date" id="book-date" style="background:#0f172a; color:#fff; border:1px solid #334155; padding:10px; border-radius:10px; width:100%; margin-bottom:15px;">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Select Time</label>
+                        <input type="time" id="book-time" style="background:#0f172a; color:#fff; border:1px solid #334155; padding:10px; border-radius:10px; width:100%; margin-bottom:15px;">
+                    </div>
+
+                    <div class="input-group">
+                        <label>Session Type</label>
+                        <select id="book-type" style="background:#0f172a; color:#fff; border:1px solid #334155; padding:10px; border-radius:10px; width:100%; margin-bottom:20px;">
+                            <option value="Online">Chat Consultation (Online)</option>
+                            <option value="Video">Video Call Consultation</option>
+                            <option value="Voice">Voice Call Consultation</option>
+                            <option value="Offline">Clinic Visit (Offline)</option>
+                        </select>
+                    </div>
+
+                    <button id="next-to-payment" class="capture-btn">Book & Proceed to Payment</button>
+                </div>
+
+                <div id="booking-step-2" class="booking-step" style="display: none; text-align: center;">
+                    <i class="fa-solid fa-credit-card" style="font-size: 3rem; color: var(--accent-color); margin-bottom: 20px;"></i>
+                    <h3>Secure Payment</h3>
+                    <p style="color:#94a3b8; font-size:0.9rem; margin-bottom:25px;">Please complete the payment of <b>₹500</b> to confirm your slot.</p>
+                    
+                    <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-bottom: 25px;">
+                        <span style="font-size: 0.8rem; color: #64748b;">UPI ID: serenelabs@upi</span><br>
+                        <span style="font-weight: 600; color: #fff;">Antigravity Health Services</span>
+                    </div>
+
+                    <button id="confirm-payment-sim" class="capture-btn" style="background: #10b981;">Confirm Payment</button>
+                </div>
+
+                <div id="booking-step-3" class="booking-step" style="display: none; text-align: center;">
+                    <i class="fa-solid fa-circle-check" style="font-size: 3rem; color: #10b981; margin-bottom: 20px;"></i>
+                    <h3>Payment Successful!</h3>
+                    <p style="color:#94a3b8; font-size:0.9rem; margin-bottom:25px;">Your slot is reserved. Click below to confirm via WhatsApp with your Specialist.</p>
+                    
+                    <button id="confirm-whatsapp" class="capture-btn" style="background: #25D366; border: none;">
+                        <i class="fa-brands fa-whatsapp"></i> Confirm on WhatsApp
+                    </button>
+                    <p style="font-size: 0.75rem; color: #475569; margin-top: 15px;">A pre-filled message will be generated for you.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════════════ -->
+        <!-- TAB: PROFILE (New)                                                -->
+        <!-- ══════════════════════════════════════════════════════════════════ -->
+        <div id="tab-profile" class="tab-content" style="display:none;">
+            <div class="dashboard-scroll">
+                <div class="dashboard-header">
+                    <h2>👤 My Profile & Medical Info</h2>
+                    <p style="color:#94a3b8; font-size:0.9rem;">Keep your details and emergency contacts up to date.</p>
+                </div>
+                
+                <form id="profile-form" class="profile-card">
+                    <h3>Basic Details</h3>
+                    <div class="input-group">
+                        <label>Full Name</label>
+                        <input type="text" id="profile-name" value="{{ user.full_name if user.full_name else '' }}" style="background:#0f172a; color:#e2e8f0; border:1px solid #334155; padding:8px; border-radius:8px; width:100%; margin-bottom:10px;">
+                    </div>
+                    <div class="input-group">
+                        <label>Occupation</label>
+                        <input type="text" id="profile-bio" value="{{ user.occupation if user.occupation else '' }}" style="background:#0f172a; color:#e2e8f0; border:1px solid #334155; padding:8px; border-radius:8px; width:100%; margin-bottom:10px;">
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <div class="input-group" style="flex:1;">
+                            <label>Age</label>
+                            <input type="number" id="profile-age" value="{{ user.age if user.age else '' }}" style="background:#0f172a; color:#e2e8f0; border:1px solid #334155; padding:8px; border-radius:8px; width:100%; margin-bottom:10px;">
+                        </div>
+                        <div class="input-group" style="flex:1;">
+                            <label>Gender</label>
+                            <select id="profile-gender" style="background:#0f172a; color:#e2e8f0; border:1px solid #334155; padding:8px; border-radius:8px; width:100%; margin-bottom:10px;">
+                                <option value="Male" {{ 'selected' if user.gender == 'Male' }}>Male</option>
+                                <option value="Female" {{ 'selected' if user.gender == 'Female' }}>Female</option>
+                                <option value="Other" {{ 'selected' if user.gender == 'Other' }}>Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Phone Number (for SMS Alerts)</label>
+                        <input type="text" id="profile-phone" value="{{ user.phone_number if user.phone_number else '' }}" placeholder="Enter your mobile number..." style="background:#0f172a; color:#e2e8f0; border:1px solid #334155; padding:8px; border-radius:8px; width:100%; margin-bottom:10px;">
+                    </div>
+                    
+                    <h3 style="margin-top:20px;">Medical & Mental Health Info</h3>
+                    <div class="input-group">
+                        <label>Mental Health History (Optional)</label>
+                        <textarea id="profile-history" placeholder="E.g., Previously diagnosed with anxiety..." style="background:#0f172a; color:#e2e8f0; border:1px solid #334155; padding:8px; border-radius:8px; width:100%; height:80px; margin-bottom:10px;">{{ user.mental_health_history if user.mental_health_history else '' }}</textarea>
+                    </div>
+
+                    <h3 style="margin-top:20px;">Notification Preferences</h3>
+                    <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;">
+                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                            <input type="checkbox" id="notify-email" {{ 'checked' if user.email_notifications else '' }}> Email Notifications
+                        </label>
+                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                            <input type="checkbox" id="notify-sms" {{ 'checked' if user.sms_notifications else '' }}> SMS Alerts (Beta)
+                        </label>
+                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                            <input type="checkbox" id="notify-app" {{ 'checked' if user.app_notifications else '' }}> App Push Notifications
+                        </label>
+                    </div>
+
+                    <button type="submit" class="capture-btn" style="margin-top:20px;">Update Profile</button>
+                    <div id="profile-msg" style="margin-top:10px; font-size:0.9rem; color:#4ade80; display:none;">Profile updated successfully!</div>
+                </form>
+
+            </div>
+        </div>
+
+    </div><!-- end .app-container -->
+
+    <!-- ── Unified Consultation Modal (Chat/Video/Voice) ─────────────── -->
+    <div id="consultation-modal" class="camera-modal">
+        <div class="camera-content glass-premium" style="max-width: 800px; width:95%; height:85vh; display:flex; flex-direction:column; padding:0; overflow:hidden; border-radius:24px;">
+            <!-- Video/Voice Section -->
+            <div id="consultation-media" style="height: 50%; background:#000; position:relative; overflow:hidden; display:none;">
+                <video id="consultation-video-remote" style="width:100%; height:100%; object-fit:cover;" autoplay muted loop></video>
+                <div id="video-placeholder" style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; background:rgba(15,23,42,0.95);">
+                    <div class="pulse-circle" style="width:100px; height:100px; background:var(--accent-gradient); border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:20px; box-shadow:0 0 30px var(--accent-color);">
+                        <i class="fa-solid fa-user-doctor" style="font-size:2.5rem;"></i>
+                    </div>
+                    <h3 id="consultation-status" style="letter-spacing:1px;">CONNECTING...</h3>
+                </div>
+                <!-- Local Mini View -->
+                <video id="consultation-video-local" style="position:absolute; top:20px; right:20px; width:120px; height:160px; background:#1e293b; border-radius:16px; border:2px solid var(--accent-color); object-fit:cover; box-shadow:0 10px 20px rgba(0,0,0,0.5);" autoplay muted></video>
+                <!-- Controls -->
+                <div class="consultation-controls" style="position:absolute; bottom:30px; left:50%; transform:translateX(-50%); display:flex; gap:20px; z-index:10;">
+                    <button id="toggle-mic-btn" class="vibrant-btn" style="width:55px; height:55px; border-radius:50%; background:rgba(255,255,255,0.1); border:none; color:#fff; backdrop-filter:blur(10px);"><i class="fa-solid fa-microphone"></i></button>
+                    <button id="end-call-btn" style="width:65px; height:65px; border-radius:50%; background:#ef4444; border:none; color:#fff; font-size:1.5rem; box-shadow:0 0 20px rgba(239,68,68,0.5);"><i class="fa-solid fa-phone-slash"></i></button>
+                    <button id="toggle-video-btn" class="vibrant-btn" style="width:55px; height:55px; border-radius:50%; background:rgba(255,255,255,0.1); border:none; color:#fff; backdrop-filter:blur(10px);"><i class="fa-solid fa-video"></i></button>
+                </div>
+            </div>
+
+            <!-- Chat Section -->
+            <div id="consultation-chat" style="flex:1; display:flex; flex-direction:column; background:var(--bg-card);">
+                <div class="modal-header" style="padding:20px 25px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.02);">
+                    <div>
+                        <h3 id="chat-dr-name" style="margin:0; font-size:1.1rem; color:var(--accent-color);">Consultation</h3>
+                        <span id="chat-dr-status" style="font-size:0.8rem; color:#4ade80; display:flex; align-items:center; gap:5px; margin-top:4px;">
+                            <span style="width:8px; height:8px; background:#4ade80; border-radius:50%; display:inline-block; animation:pulse 2s infinite;"></span> Doctor is Online
+                        </span>
+                    </div>
+                    <button id="close-consultation" class="close-btn" style="background:rgba(255,255,255,0.05); width:40px; height:40px;"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <!-- Messages Placeholder -->
+                <div id="consultation-messages" style="flex:1; padding:25px; overflow-y:auto; display:flex; flex-direction:column; gap:15px; background:radial-gradient(circle at center, rgba(124,58,237,0.05) 0%, transparent 70%);">
+                    <div class="message bot-message" style="align-self:center;">
+                        <div class="message-content" style="background:rgba(30,41,59,0.8); border:1px solid rgba(255,255,255,0.05); border-radius:12px; font-size:0.85rem; color:#94a3b8;">
+                            Consultation started. Your doctor will join shortly.
+                        </div>
+                    </div>
+                </div>
+                <!-- Input -->
+                <div style="padding:20px 25px; background:rgba(15,23,42,0.8); border-top:1px solid rgba(255,255,255,0.05); display:flex; gap:15px; align-items:center;">
+                    <div style="flex:1; position:relative;">
+                        <input type="text" id="consultation-input" placeholder="Type a message to your doctor..." style="width:100%; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); padding:14px 20px; border-radius:30px; color:#fff; outline:none; font-size:0.95rem; transition:0.3s;">
+                    </div>
+                    <button id="send-consultation-btn" class="capture-btn" style="width:50px; height:50px; border-radius:50%; padding:0; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Notification Toast Container ────────────────────────────── -->
+    <div id="notification-container" style="position:fixed; top:20px; right:20px; z-index:10000; display:flex; flex-direction:column; gap:10px; pointer-events:none;"></div>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/i18n.js') }}?v=5"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}?v=5"></script>
+    <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA0-aaAT-R8bH6nxLocT8DEdTZpNdqP6uw&callback=initMapPlaceholder"></script>
+</body>
+</html>
