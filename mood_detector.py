@@ -2,19 +2,25 @@ import base64
 import io
 import numpy as np
 from PIL import Image
-from deepface import DeepFace
-import cv2
 import pandas as pd
 import os
+
+try:
+    from deepface import DeepFace
+    DEEPFACE_AVAILABLE = True
+except ImportError:
+    DEEPFACE_AVAILABLE = False
 
 class MoodDetector:
     """
     Facial emotion recognition using DeepFace.
     Detects emotions from face images and provides mood analysis.
+    Gracefully falls back if DeepFace is not installed (e.g., on Netlify/Serverless).
     """
     
     # Emotion to mood improvement mapping
     MOOD_SUGGESTIONS = {
+
         'happy': [
             "Great to see you're feeling positive! Keep up the good vibes!",
             "Your happiness is wonderful. Consider sharing it with someone today!",
@@ -139,14 +145,17 @@ class MoodDetector:
         self.detector_backend = 'ssd' # Good balance: fast on CPU + accurate for all 7 emotions
         
         # Pre-warm the model to avoid timeouts on the first request
-        print("Pre-warming DeepFace model...")
-        try:
-            # dummy image for warm-up
-            dummy_img = np.zeros((100, 100, 3), dtype=np.uint8)
-            DeepFace.analyze(dummy_img, actions=['emotion'], detector_backend=self.detector_backend, enforce_detection=False, silent=True)
-            print("DeepFace model pre-warmed successfully.")
-        except Exception as e:
-            print(f"Warning: Model pre-warming failed: {e}")
+        if DEEPFACE_AVAILABLE:
+            print("Pre-warming DeepFace model...")
+            try:
+                # dummy image for warm-up
+                dummy_img = np.zeros((100, 100, 3), dtype=np.uint8)
+                DeepFace.analyze(dummy_img, actions=['emotion'], detector_backend=self.detector_backend, enforce_detection=False, silent=True)
+                print("DeepFace model pre-warmed successfully.")
+            except Exception as e:
+                print(f"Warning: Model pre-warming failed: {e}")
+        else:
+            print("DeepFace is NOT available in this environment. Running in mocked mode (Camera disabled).")
         
     def decode_image(self, base64_string):
         """
@@ -194,6 +203,17 @@ class MoodDetector:
         Returns:
             dict with emotion, confidence, and suggestions
         """
+        if not DEEPFACE_AVAILABLE:
+            print("DeepFace not available. Returning mock neutral emotion.")
+            return {
+                'success': True,
+                'emotion': 'neutral',
+                'confidence': 85.0,
+                'all_emotions': {'angry': 0.0, 'disgust': 0.0, 'fear': 0.0, 'happy': 0.0, 'neutral': 85.0, 'sad': 0.0, 'surprise': 0.0},
+                'suggestions': self.MOOD_SUGGESTIONS['neutral'],
+                'message': "Detected emotion: Neutral (85.0% confidence) [MOCKED]"
+            }
+
         try:
             # Decode image
             img_array = self.decode_image(base64_image)

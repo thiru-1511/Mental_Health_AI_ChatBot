@@ -7,9 +7,9 @@ langchain-huggingface
 faiss-cpu
 sentence-transformers
 pypdf
-deepface
-opencv-python
-tf-keras
+# deepface  # Removed for Netlify compatibility (TensorFlow size/version issues)
+# opencv-python # Removed for Netlify compatibility
+# tf-keras # Removed for Netlify compatibility
 pillow
 pandas
 librosa
