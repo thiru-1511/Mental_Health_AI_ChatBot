@@ -1,18 +1,15 @@
 flask
 langchain
 langchain-community
-langchain-ollama
 langchain-text-splitters
-langchain-huggingface
+langchain-google-genai
+google-generativeai
 faiss-cpu
-sentence-transformers
 pypdf
-# deepface  # Removed for Netlify compatibility (TensorFlow size/version issues)
-# opencv-python # Removed for Netlify compatibility
-# tf-keras # Removed for Netlify compatibility
 pillow
 pandas
 librosa
 soundfile
 SpeechRecognition
 gunicorn
+numpy
