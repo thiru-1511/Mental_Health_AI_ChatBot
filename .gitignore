@@ -1,0 +1,25 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Databases (Local data that shouldn't be in git)
+*.db
+!data/doctors.db  # Only keep the seeded database if required
+
+# Vector index (Will be rebuilt on server)
+faiss_index/
+
+# OS files
+.DS_Store
+Thumbs.db
