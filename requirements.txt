@@ -13,3 +13,4 @@ soundfile
 SpeechRecognition
 gunicorn
 numpy
+fpdf2
