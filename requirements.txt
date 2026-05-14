@@ -8,6 +8,16 @@ faiss-cpu
 pypdf
 pillow
 pandas
+flask
+langchain
+langchain-community
+langchain-text-splitters
+langchain-google-genai
+google-generativeai
+faiss-cpu
+pypdf
+pillow
+pandas
 librosa
 soundfile
 SpeechRecognition
@@ -16,3 +26,4 @@ numpy
 fpdf2
 pymysql
 python-dotenv
+cryptography
