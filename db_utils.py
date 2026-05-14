@@ -5,11 +5,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # MySQL configuration from environment variables or defaults
-DB_HOST = os.getenv('MYSQL_HOST', 'localhost')
-DB_USER = os.getenv('MYSQL_USER', 'root')
-DB_PASSWORD = os.getenv('MYSQL_PASSWORD', '')
-DB_NAME = os.getenv('MYSQL_DATABASE', 'chatbot_db')
-DB_PORT = int(os.getenv('MYSQL_PORT', '3306'))
+DB_HOST = os.getenv('MYSQL_HOST', 'localhost').strip()
+DB_USER = os.getenv('MYSQL_USER', 'root').strip()
+DB_PASSWORD = os.getenv('MYSQL_PASSWORD', '').strip()
+DB_NAME = os.getenv('MYSQL_DATABASE', 'chatbot_db').strip()
+DB_PORT_STR = os.getenv('MYSQL_PORT', '3306').strip()
+DB_PORT = int(DB_PORT_STR)
 
 def get_connection():
     """
