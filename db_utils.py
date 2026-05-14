@@ -16,6 +16,10 @@ def get_connection():
     Returns a PyMySQL connection object.
     It automatically creates the database if it does not exist.
     """
+    ssl_args = {}
+    if DB_HOST != 'localhost' and DB_HOST != '127.0.0.1':
+        ssl_args = {'ssl_verify_cert': True, 'ssl_verify_identity': True}
+
     # First, connect without a specific database to ensure it exists
     try:
         conn = pymysql.connect(
@@ -24,7 +28,8 @@ def get_connection():
             password=DB_PASSWORD,
             port=DB_PORT,
             charset='utf8mb4',
-            cursorclass=pymysql.cursors.DictCursor
+            cursorclass=pymysql.cursors.DictCursor,
+            **ssl_args
         )
         with conn.cursor() as cursor:
             cursor.execute(f"CREATE DATABASE IF NOT EXISTS {DB_NAME}")
@@ -41,7 +46,8 @@ def get_connection():
         database=DB_NAME,
         port=DB_PORT,
         charset='utf8mb4',
-        cursorclass=pymysql.cursors.DictCursor
+        cursorclass=pymysql.cursors.DictCursor,
+        **ssl_args
     )
 
 def init_db():
