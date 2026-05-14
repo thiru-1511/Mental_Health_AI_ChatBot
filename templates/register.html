@@ -19,8 +19,20 @@
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             animation: fadeIn 0.5s ease-out;
             margin: 20px;
+            box-sizing: border-box;
         }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        @media (max-width: 480px) {
+            .auth-card {
+                padding: 25px 20px;
+                border-radius: 16px;
+                margin: 15px;
+            }
+            .auth-header h1 {
+                font-size: 1.6rem;
+            }
+        }
         
         .auth-header { text-align: center; margin-bottom: 25px; }
         .auth-header h1 { font-size: 1.8rem; background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }

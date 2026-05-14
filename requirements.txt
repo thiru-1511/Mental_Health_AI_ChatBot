@@ -14,3 +14,5 @@ SpeechRecognition
 gunicorn
 numpy
 fpdf2
+pymysql
+python-dotenv

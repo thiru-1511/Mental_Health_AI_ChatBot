@@ -1,50 +1,19 @@
-import sqlite3
 import math
 import os
-
-DB_PATH = 'data/doctors.db'
+from db_utils import get_connection
 
 class DoctorManager:
-    def __init__(self, db_path=DB_PATH):
-        self.db_path = db_path
-        self._init_db()
-
-    def _init_db(self):
-        with sqlite3.connect(self.db_path) as conn:
-            try:
-                conn.execute("ALTER TABLE doctors ADD COLUMN user_id INTEGER")
-            except sqlite3.OperationalError:
-                pass
-            try:
-                conn.execute("ALTER TABLE appointments ADD COLUMN type TEXT DEFAULT 'Online'")
-            except sqlite3.OperationalError:
-                pass
-            try:
-                conn.execute("ALTER TABLE appointments ADD COLUMN status TEXT DEFAULT 'Pending'")
-                conn.execute("ALTER TABLE appointments ADD COLUMN notes TEXT")
-                conn.execute("ALTER TABLE appointments ADD COLUMN prescription TEXT")
-            except sqlite3.OperationalError:
-                pass
-            
-            conn.execute('''
-                CREATE TABLE IF NOT EXISTS notifications (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER,
-                    appointment_id INTEGER,
-                    type TEXT, 
-                    channel TEXT, 
-                    send_at DATETIME,
-                    status TEXT DEFAULT 'Pending',
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
-            conn.commit()
+    def __init__(self):
+        pass # Schema initialization is handled by db_utils.init_db()
 
     def get_all_doctors(self):
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.execute("SELECT * FROM doctors")
-            return [dict(row) for row in cursor.fetchall()]
+        conn = get_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT * FROM doctors")
+                return cursor.fetchall()
+        finally:
+            conn.close()
 
     def search_doctors(self, filters):
         """
@@ -55,38 +24,44 @@ class DoctorManager:
         params = []
         
         if filters.get('specialization'):
-            query += " AND specialization = ?"
+            query += " AND specialization = %s"
             params.append(filters['specialization'])
         
         if filters.get('location'):
-            query += " AND location LIKE ?"
+            query += " AND location LIKE %s"
             params.append(f"%{filters['location']}%")
             
         if filters.get('language'):
-            query += " AND languages LIKE ?"
+            query += " AND languages LIKE %s"
             params.append(f"%{filters['language']}%")
             
         if filters.get('max_fees'):
-            query += " AND fees <= ?"
+            query += " AND fees <= %s"
             params.append(float(filters['max_fees']))
             
         if filters.get('availability'):
-            query += " AND availability = ?"
+            query += " AND availability = %s"
             params.append(filters['availability'])
 
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.execute(query, params)
-            return [dict(row) for row in cursor.fetchall()]
+        conn = get_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(query, params)
+                return cursor.fetchall()
+        finally:
+            conn.close()
 
     def get_nearby_facilities(self, user_lat, user_lon, radius_km=50):
         """
         Returns facilities within a certain radius using Haversine formula.
         """
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.execute("SELECT * FROM facilities")
-            all_facilities = [dict(row) for row in cursor.fetchall()]
+        conn = get_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT * FROM facilities")
+                all_facilities = cursor.fetchall()
+        finally:
+            conn.close()
             
         nearby = []
         for fac in all_facilities:
@@ -108,87 +83,112 @@ class DoctorManager:
         return R * c
 
     def book_appointment(self, doctor_id, user_id, date, time, session_type='Online'):
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute(
-                "INSERT INTO appointments (doctor_id, user_id, date, time, type) VALUES (?, ?, ?, ?, ?)",
-                (doctor_id, user_id, date, time, session_type)
-            )
-            conn.commit()
-            return cursor.lastrowid
+        conn = get_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    "INSERT INTO appointments (doctor_id, user_id, date, time, type) VALUES (%s, %s, %s, %s, %s)",
+                    (doctor_id, user_id, date, time, session_type)
+                )
+                conn.commit()
+                return cursor.lastrowid
+        finally:
+            conn.close()
 
     def get_doctor_appointments(self, doctor_user_id):
         """Fetches appointments for a specialist based on their user_id."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            # First find the doctor_id for this user_id
-            cursor = conn.execute("SELECT id FROM doctors WHERE user_id = ?", (doctor_user_id,))
-            dr = cursor.fetchone()
-            if not dr: return []
-            dr_id = dr['id']
-            
-            # Now get appointments joined with patient info (from usersTable - we'll handle this join in app.py or here)
-            # Since users.db is separate, we'll fetch appointments first then patient details
-            cursor = conn.execute("SELECT * FROM appointments WHERE doctor_id = ? ORDER BY date DESC, time DESC", (dr_id,))
-            return [dict(row) for row in cursor.fetchall()]
+        conn = get_connection()
+        try:
+            with conn.cursor() as cursor:
+                # First find the doctor_id for this user_id
+                cursor.execute("SELECT id FROM doctors WHERE user_id = %s", (doctor_user_id,))
+                dr = cursor.fetchone()
+                if not dr: return []
+                dr_id = dr['id']
+                
+                # Now get appointments joined with patient info (from usersTable - we'll handle this join in app.py or here)
+                cursor.execute("SELECT * FROM appointments WHERE doctor_id = %s ORDER BY date DESC, time DESC", (dr_id,))
+                return cursor.fetchall()
+        finally:
+            conn.close()
 
     def get_patient_appointments(self, user_id):
         """Fetches all appointments for a patient (Medical History)."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.execute("""
-                SELECT a.*, d.name as doctor_name, d.specialization 
-                FROM appointments a
-                JOIN doctors d ON a.doctor_id = d.id
-                WHERE a.user_id = ? 
-                ORDER BY a.date DESC, a.time DESC
-            """, (user_id,))
-            return [dict(row) for row in cursor.fetchall()]
+        conn = get_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    SELECT a.*, d.name as doctor_name, d.specialization 
+                    FROM appointments a
+                    JOIN doctors d ON a.doctor_id = d.id
+                    WHERE a.user_id = %s 
+                    ORDER BY a.date DESC, a.time DESC
+                """, (user_id,))
+                return cursor.fetchall()
+        finally:
+            conn.close()
 
     def get_appointment_by_id(self, app_id):
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.execute("""
-                SELECT a.*, d.name as doctor_name, d.specialization 
-                FROM appointments a
-                JOIN doctors d ON a.doctor_id = d.id
-                WHERE a.id = ?
-            """, (app_id,))
-            row = cursor.fetchone()
-            return dict(row) if row else None
+        conn = get_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    SELECT a.*, d.name as doctor_name, d.specialization 
+                    FROM appointments a
+                    JOIN doctors d ON a.doctor_id = d.id
+                    WHERE a.id = %s
+                """, (app_id,))
+                return cursor.fetchone()
+        finally:
+            conn.close()
 
     def update_appointment(self, app_id, status=None, notes=None, prescription=None):
         updates = []
         params = []
         if status:
-            updates.append("status = ?")
+            updates.append("status = %s")
             params.append(status)
         if notes:
-            updates.append("notes = ?")
+            updates.append("notes = %s")
             params.append(notes)
         if prescription:
-            updates.append("prescription = ?")
+            updates.append("prescription = %s")
             params.append(prescription)
         
         if not updates: return False
         
         params.append(app_id)
-        query = f"UPDATE appointments SET {', '.join(updates)} WHERE id = ?"
+        query = f"UPDATE appointments SET {', '.join(updates)} WHERE id = %s"
         
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute(query, params)
-            conn.commit()
-            return True
+        conn = get_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(query, params)
+                conn.commit()
+                return True
+        finally:
+            conn.close()
 
     def get_patient_mood_summary(self, patient_id):
         """Fetches recent mood history for a specialist to review."""
         try:
-            # Requires access to mood_history.db
-            from mood_tracker import DB_PATH as MOOD_DB
-            with sqlite3.connect(MOOD_DB) as conn:
-                conn.row_factory = sqlite3.Row
-                cursor = conn.execute("SELECT emotion, timestamp FROM moods WHERE 1=1 ORDER BY timestamp DESC LIMIT 50")
-                return [dict(row) for row in cursor.fetchall()]
+            conn = get_connection()
+            with conn.cursor() as cursor:
+                # We fetch moods matching this patient_id (assuming mood_events.user_id = patient_id, though user_id might be missing in older logs)
+                # But since we just added user_id to mood_events, let's query it
+                cursor.execute("""
+                    SELECT emotion, timestamp 
+                    FROM mood_events
+                    WHERE user_id = %s OR user_id IS NULL
+                    ORDER BY timestamp DESC LIMIT 50
+                """, (patient_id,))
+                return cursor.fetchall()
         except:
             return []
+        finally:
+            try:
+                conn.close()
+            except:
+                pass
 
 doctor_manager = DoctorManager()

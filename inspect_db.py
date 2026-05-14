@@ -1,27 +1,26 @@
-import sqlite3
+from db_utils import get_connection
 
 def check_db():
     try:
-        conn = sqlite3.connect('c:/Users/thirumalai/Downloads/AI CHATBOT/data/doctors.db')
-        cursor = conn.cursor()
-        
-        # Get tables
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-        tables = [t[0] for t in cursor.fetchall()]
-        print(f"Tables found: {tables}")
-        
-        for table in tables:
-            print(f"\n--- {table} ---")
-            cursor.execute(f"PRAGMA table_info('{table}')")
-            columns = cursor.fetchall()
-            for col in columns:
-                print(f"Col {col[1]} ({col[2]})")
+        conn = get_connection()
+        with conn.cursor() as cursor:
+            # Get tables
+            cursor.execute("SHOW TABLES")
+            tables = [list(t.values())[0] for t in cursor.fetchall()]
+            print(f"Tables found: {tables}")
             
-            # Sample data
-            cursor.execute(f"SELECT * FROM '{table}' LIMIT 2")
-            rows = cursor.fetchall()
-            print(f"Sample data: {rows}")
-            
+            for table in tables:
+                print(f"\n--- {table} ---")
+                cursor.execute(f"DESCRIBE {table}")
+                columns = cursor.fetchall()
+                for col in columns:
+                    print(f"Col {col['Field']} ({col['Type']})")
+                
+                # Sample data
+                cursor.execute(f"SELECT * FROM {table} LIMIT 2")
+                rows = cursor.fetchall()
+                print(f"Sample data: {rows}")
+                
         conn.close()
     except Exception as e:
         print(f"Error: {e}")
