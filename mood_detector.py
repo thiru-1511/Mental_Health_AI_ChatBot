@@ -249,35 +249,25 @@ class MoodDetector:
             dominant_emotion = result['dominant_emotion']
             
             # --- EMOTION SENSITIVITY FIX ---
-            # The model can be biased toward 'neutral' or 'happy'.
-            # If ANY expressive emotion scores above the threshold, prefer it over neutral/happy.
-            # Lowered threshold to 1.5% to catch subtle expressions (sad, fearful, disgusted, angry, surprised).
-            expressive_threshold = 1.5
-            EXPRESSIVE_EMOTIONS = {'angry', 'disgust', 'fear', 'sad', 'surprise'}
+            # The model can be biased toward 'neutral'.
+            # If ANY expressive emotion scores above a small threshold, prefer it over neutral.
+            # Lowered threshold to catch subtle expressions (sad, fearful, disgusted, angry, surprised, happy).
+            expressive_threshold = 0.1
+            EXPRESSIVE_EMOTIONS = {'angry', 'disgust', 'fear', 'sad', 'surprise', 'happy'}
 
             non_neutral_emotions = {
                 k: v for k, v in emotions_scores.items()
                 if k in EXPRESSIVE_EMOTIONS and v > expressive_threshold
             }
 
-            if dominant_emotion in ('neutral', 'happy') and non_neutral_emotions:
-                # Prefer the strongest expressive emotion over neutral/happy bias
-                # Sort by score to find the best expressive emotion
+            if dominant_emotion == 'neutral' and non_neutral_emotions:
+                # Prefer the strongest expressive emotion over neutral bias
                 best_expressive = max(non_neutral_emotions, key=non_neutral_emotions.get)
                 
-                # If neutral is dominant but not "massively" dominant (e.g., less than 85%),
-                # or if the expressive emotion is significant (> 10%), override it.
-                neutral_score = emotions_scores.get('neutral', 0)
-                expressive_score = emotions_scores[best_expressive]
-                
-                if neutral_score < 85 or expressive_score > 10:
-                    print(f"Overriding '{dominant_emotion}' ({emotions_scores[dominant_emotion]:.1f}%) "
-                          f"→ '{best_expressive}' ({emotions_scores[best_expressive]:.1f}%)")
-                    emotion = best_expressive
-                    confidence = emotions_scores[best_expressive]
-                else:
-                    emotion = dominant_emotion
-                    confidence = emotions_scores[emotion]
+                print(f"Overriding '{dominant_emotion}' ({emotions_scores[dominant_emotion]:.1f}%) "
+                      f"→ '{best_expressive}' ({emotions_scores[best_expressive]:.1f}%)")
+                emotion = best_expressive
+                confidence = emotions_scores[best_expressive]
             else:
                 emotion = dominant_emotion
                 confidence = emotions_scores[emotion]
